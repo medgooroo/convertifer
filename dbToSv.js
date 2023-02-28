@@ -7,12 +7,10 @@ fileSelector.addEventListener('change', (event) => {
     const reader = new FileReader();
     reader.onload = (e) => {
         const dbacv = new DOMParser().parseFromString(e.target.result, "application/xml");
-        processdbacv(dbacv, fileList[0].name);
+        processdbacv(dbacv, fileList[0].name.split(".")[0]);
     }
     reader.readAsText(fileList[0]);
 });
-
-
 
 function processdbacv(dbacv, fileName) {
     // TODO option to import visible only? 

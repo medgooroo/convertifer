@@ -13,7 +13,8 @@ fc2_fileSelector.addEventListener('change', (event) => {
         let offset = findOffset(buff, signature); // find offset into file for magic number
         let result = pako.ungzip(buff.slice(offset), { "to": "string" }); // ungzip from offset
         const easeXML = new DOMParser().parseFromString(result, "application/xml");
-        processEase(easeXML);
+        processEase(easeXML, fileList[0].name.split(".")[0]);
+
     };
     fileReader.readAsArrayBuffer(fileList[0]);
 });
@@ -29,7 +30,7 @@ function findOffset(buff, signature) { // find where the signature is is the fil
     });
 }
 
-function processEase(easeXML) {
+function processEase(easeXML, fileName) {
     var easeKeys = easeXML.getElementsByTagName('Keys')[0];
     var easeValues = easeXML.getElementsByTagName('Values')[0];
     var keysRef = easeKeys.getAttribute("href").slice(1);
@@ -352,7 +353,7 @@ function processEase(easeXML) {
     var blob = new Blob([xmlText], {
         type: "application/xml;charset=utf-8;"
     });
-    saveAs(blob, "mesh.dbacv");
+    saveAs(blob, fileName + ".dbacv");
 
 }
 
