@@ -8,18 +8,13 @@ fc2_fileSelector.addEventListener('change', (event) => {
     var fileReader = new FileReader();
     fileReader.onload = function () {
         arrayBuffer = this.result;
-        //try {
         let buff = new Uint8Array(arrayBuffer);
         const signature = [0x1f, 0x8b, 0x08, 0x00, 0x00]; // gzip magic number, deflate, some zeros.
         let offset = findOffset(buff, signature); // find offset into file for magic number
         let result = pako.ungzip(buff.slice(offset), { "to": "string" }); // ungzip from offset
         const easeXML = new DOMParser().parseFromString(result, "application/xml");
         processEase(easeXML);
-        // catch (err) {
-        // console.log("Error " + err);
-        //}
     };
-    //console.log(fileList[0]);
     fileReader.readAsArrayBuffer(fileList[0]);
 });
 
@@ -67,15 +62,12 @@ function processEase(easeXML) {
         createObjects(result, keys[i].split('.'), values[i]);
     }
 
-
-    // HOLY FUCKING SHITBALLS.
     // FINALLY! we have a javascript object.
-
     console.log(result);// <-----------------------------------------------HERE for json overall
     // fuck yeah, motherfucker.
     console.log(result.Project.Title);
     //console.log(result.Project.Notes);
-    console.log(result.Project.Author);
+ //   console.log(result.Project.Author);
 
     var doc = document.implementation.createDocument("", "", null);
     var main = doc.createElement("ArrayCalc");
@@ -184,6 +176,7 @@ function processEase(easeXML) {
                         if (zoneValue.Radius != undefined) zoneValue.Type = "Arc";
                         if (zoneValue.FrontEdge != undefined) zoneValue.Type = "Trapezoid";
                         if (zoneValue.RightAngleLeft != undefined) zoneValue.Type = "Right Trapezoid"; // order is relevant..
+                                                                                                    
                     }
                     console.log("type: " + zoneValue.Type);
                     if (zoneValue.Type == "Arc") roomObject.setAttribute("Shape", "2"); // 
@@ -327,25 +320,20 @@ function processEase(easeXML) {
                     switch (zoneValue.Type) {
                         case "Annulus":
                             genArcSec(roomObject, zoneValue, areaValue);
-                            lastShape = "Arc";
                             break;
                         case "Arc":
                             genArcSec(roomObject, zoneValue, areaValue);
-                            lastShape = "Arc";
                             break;
                         case "Right Trapezoid":
                             genRightTrapezoid(roomObject, zoneValue, areaValue);
-                            lastShape = "Right Trapezoid";
                             break;
                         case "Trapezoid":
                             genTrapezoid(roomObject, zoneValue, areaValue);
-                            lastShape = "Trapezoid";
                             break;
                         case "Rectangle":
                             genRectangle(roomObject, zoneValue, areaValue);
-                            lastShape = "Rectangle";
                             break;
-                        default: // who tf wrote ease?
+                        default: 
                     }
 
 
@@ -354,7 +342,6 @@ function processEase(easeXML) {
                 }
             }
             venue.appendChild(roomObjectGroup);
-
             console.log("\n");
 
         }
@@ -369,16 +356,6 @@ function processEase(easeXML) {
 
 }
 
-//  console.log(result.Project.AudienceZoneManager);
-
-// audience zone is an offset to its audience areas
-// audience area are entirely enclosed within the audience zone
-// each area is a section of the zone - same shape - different heights
-// zone type can be "annulus"
-// trapezoid doesn't seem to have a zone type
-// circular sector presumably does?
-
-
 
 function genGUID() {
     return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
@@ -388,78 +365,3 @@ function genGUID() {
 }
 
 
-
-function writeArrayCalc(mesh) {
-
-
-
-    ////////////////////////////////////////////////////////////////////// 
-
-    var triCount = 0;
-    for (var i = 0; i < mesh.triangles.length; i = i + 3) {
-        var roomObject = doc.createElement("RoomObject");
-        roomObject.setAttribute("Shape", "6"); // like 5, but one more.
-        roomObject.setAttribute("PlaneType", "1");
-        roomObject.setAttribute("Name", "Layer" + triCount);
-        roomObject.setAttribute("Enabled", "1");
-        roomObject.setAttribute("Transparent", "1");
-        roomObject.setAttribute("Locked", "0");
-        roomObject.setAttribute("ListenerHeight", "1.7");
-        roomObject.setAttribute("Color", "4294923348"); // needs a u.
-        roomObject.setAttribute("PrintColor", "4294945280"); // ^
-        roomObject.setAttribute("ParentVenueObjectId", "1001"); // 
-        roomObject.setAttribute("OrderIndex", triCount); // this ruins things?
-        el = doc.createElement("Origin");
-        el.setAttribute("x", 0);
-        el.setAttribute("y", 0);
-        el.setAttribute("z", 0);
-        roomObject.appendChild(el);
-        el = doc.createElement("Rotation");
-        roomObject.appendChild(el);
-        el = doc.createElement("Scaling");
-        el.setAttribute("x", "1");
-        el.setAttribute("y", "1");
-        el.setAttribute("z", "1");
-        roomObject.appendChild(el);
-        el = doc.createElement("P1");
-        el.setAttribute("x", mesh.vertices[mesh.triangles[i] * 3]);
-        el.setAttribute("y", mesh.vertices[mesh.triangles[i] * 3 + 1]);
-        el.setAttribute("z", mesh.vertices[mesh.triangles[i] * 3 + 2]);
-        roomObject.appendChild(el);
-        el = doc.createElement("P2");
-        el.setAttribute("x", mesh.vertices[mesh.triangles[i + 1] * 3]);
-        el.setAttribute("y", mesh.vertices[mesh.triangles[i + 1] * 3 + 1]);
-        el.setAttribute("z", mesh.vertices[mesh.triangles[i + 1] * 3 + 2]);
-        roomObject.appendChild(el);
-        el = doc.createElement("P3");
-        el.setAttribute("x", mesh.vertices[mesh.triangles[i + 2] * 3]);
-        el.setAttribute("y", mesh.vertices[mesh.triangles[i + 2] * 3 + 1]);
-        el.setAttribute("z", mesh.vertices[mesh.triangles[i + 2] * 3 + 2]);
-        roomObject.appendChild(el);
-        /////////////////////////////////
-        roomObjectGroup.appendChild(roomObject);
-        triCount++;
-    }
-
-    el = doc.createElement("Origin");
-    el.setAttribute("x", 0);
-    el.setAttribute("y", 0);
-    el.setAttribute("z", 0);
-    roomObjectGroup.appendChild(el);
-    el = doc.createElement("Rotation");
-    roomObjectGroup.appendChild(el);
-    el = doc.createElement("Scaling");
-    el.setAttribute("x", "1");
-    el.setAttribute("y", "1");
-    el.setAttribute("z", "1");
-    roomObjectGroup.appendChild(el);
-
-    roomObjectGroup.appendChild(roomObject);
-    var xmlText = new XMLSerializer().serializeToString(main);
-    xmlText = "<!DOCTYPE ArrayCalc>" + xmlText;
-    var blob = new Blob([xmlText], {
-        type: "application/xml;charset=utf-8;"
-    });
-    saveAs(blob, "mesh.dbacv"); // TODO file thing
-
-}
