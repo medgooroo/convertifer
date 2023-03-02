@@ -230,13 +230,15 @@ function processEase(easeXML, fileName) {
 
                     function genRightTrapezoid(roomObject, zoneValue, areaValue) {
                         let orthSideIsRight = zoneValue.RightAngleLeft;
-                        let widthPerUnitDepth = (zoneValue.BackEdge - zoneValue.FrontEdge) / zoneValue.Depth;
-                        el = doc.createElement("P4");
+                    
                         let d1 = parseFloat(areaValue.D1);
                         let d2 = parseFloat(areaValue.D2);
                         let frontEdge = parseFloat(zoneValue.FrontEdge);
                         let backEdge = parseFloat(zoneValue.BackEdge);
+                        let midY  = Math.min( (frontEdge + backEdge) / 4, frontEdge, backEdge);
+                        
 
+                        el = doc.createElement("P4");
                         el.setAttribute("x", -(zoneValue.Depth / 2) + d1);
                         el.setAttribute("y", -(backEdge / 2)); // if orthisleft // TODO This is too confusing without pen and paper.
                         el.setAttribute("y", (backEdge / 2) - frontEdge);
