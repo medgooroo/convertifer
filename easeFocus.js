@@ -68,7 +68,7 @@ function processEase(easeXML, fileName) {
     // fuck yeah, motherfucker.
     console.log(result.Project.Title);
     //console.log(result.Project.Notes);
- //   console.log(result.Project.Author);
+    //   console.log(result.Project.Author);
 
     var doc = document.implementation.createDocument("", "", null);
     var main = doc.createElement("ArrayCalc");
@@ -138,54 +138,38 @@ function processEase(easeXML, fileName) {
             let yOrigin = parseFloat(zoneValue.Y) - projectOrigin.y;
             el = doc.createElement("Origin");
             el.setAttribute("x", xOrigin);
-            el.setAttribute("y", yOrigin);  
+            el.setAttribute("y", yOrigin);
             el.setAttribute("z", 0);
-
             roomObjectGroup.appendChild(el);
+
             el = doc.createElement("Rotation");
             el.setAttribute("x", 0);
             el.setAttribute("y", 0);
             el.setAttribute("z", 0);
-
             roomObjectGroup.appendChild(el);
+
             el = doc.createElement("Scaling");
             el.setAttribute("x", "1");
             el.setAttribute("y", "1");
             el.setAttribute("z", "1");
             roomObjectGroup.appendChild(el);
-            console.log("Width: " + zoneValue.Width)
-            console.log("Orientation: " + zoneValue.Orientation)
-            console.log("X: " + zoneValue.X)
-            console.log("Y: " + zoneValue.Y)
-
-
-            console.log("Radius: " + zoneValue.Radius);
-            console.log("SweepAngle: " + zoneValue.SweepAngle);
-            console.log("InnerRadius: " + zoneValue.InnerRadius);
-            console.log("FrontEdge: " + zoneValue.FrontEdge); // front width
-            console.log("BackEdge: " + zoneValue.BackEdge); // back width
-
 
             for (const [area, areaValue] of Object.entries(zoneValue)) {
                 var roomObject = doc.createElement("RoomObject");
                 if (area.slice(0, 5) == "Area[") {
-                    console.log("****************" + area + "***********")
                     var roomObject = doc.createElement("RoomObject");
-
                     if (zoneValue.Type == "") {  // WHY is this sometimes not defined???
                         if (zoneValue.Width != undefined) zoneValue.Type = "Rectangle";
                         if (zoneValue.Radius != undefined) zoneValue.Type = "Arc";
                         if (zoneValue.FrontEdge != undefined) zoneValue.Type = "Trapezoid";
                         if (zoneValue.RightAngleLeft != undefined) zoneValue.Type = "Right Trapezoid"; // order is relevant..
-                                                                                                    
                     }
-                    console.log("type: " + zoneValue.Type);
+
                     if (zoneValue.Type == "Arc") roomObject.setAttribute("Shape", "2"); // 
                     if (zoneValue.Type == "Rectangle") roomObject.setAttribute("Shape", "1"); // 
                     if (zoneValue.Type == "Annulus") roomObject.setAttribute("Shape", "2"); // 
                     if (zoneValue.Type == "Trapezoid") roomObject.setAttribute("Shape", "1"); // 
-                    if (zoneValue.Type == "Right Trapezoid") roomObject.setAttribute("Shape", "1"); //                 roomObjectGroup.setAttribute("ParentVenueObjectId", "1337"); // doesnt seem to matter?
-
+                    if (zoneValue.Type == "Right Trapezoid") roomObject.setAttribute("Shape", "1"); //                
                     roomObject.setAttribute("PlaneType", "1"); // dunno?
                     roomObject.setAttribute("Name", getUniqueName(nameList, zoneValue.Label + " " + areaValue.Label)); // This must be unique. 
                     roomObject.setAttribute("Enabled", "1"); //
@@ -197,25 +181,30 @@ function processEase(easeXML, fileName) {
                     roomObject.setAttribute("ParentVenueObjectId", "0"); // 
                     roomObject.setAttribute("OrderIndex", "4"); // F O U R 
 
-                    el = doc.createElement("Origin");
-                    el.setAttribute("x", 0);
-                    el.setAttribute("y", 0);
-                    el.setAttribute("z", 0);
-                    roomObject.appendChild(el);
-                    el = doc.createElement("Rotation");
-                    el.setAttribute("x", 0);
-                    el.setAttribute("y", 0);
-                    el.setAttribute("z", zoneValue.Orientation);
+                    function setScaling(object, x = 0, y = 0, z = 0) {
+                        el = doc.createElement("Scaling");
+                        el.setAttribute("x", "1");
+                        el.setAttribute("y", "1");
+                        el.setAttribute("z", "1");
+                        object.appendChild(el);
+                    }
 
-                    roomObject.appendChild(el);
-                    el = doc.createElement("Scaling");
-                    el.setAttribute("x", "1");
-                    el.setAttribute("y", "1");
-                    el.setAttribute("z", "1");
-                    roomObject.appendChild(el);
+                    function setRotation(object, x = 0, y = 0, z = 0) {
+                        el = doc.createElement("Rotation");
+                        el.setAttribute("x", x);
+                        el.setAttribute("y", y)
+                        el.setAttribute("z", z);
+                        object.appendChild(el);
+                    }
 
+                    function setOrigin(object, x = 0, y = 0, z = 0) {
+                        el = doc.createElement("Origin");
+                        el.setAttribute("x", x);
+                        el.setAttribute("y", y)
+                        el.setAttribute("z", z);
+                        object.appendChild(el);
+                    }
 
-                    // this needs work.
                     function genArcSec(roomObject, zoneValue, areaValue) {
                         roomObject.setAttribute("SpanAngle", zoneValue.SweepAngle);
                         roomObject.setAttribute("InnerRadiusA", parseFloat(zoneValue.InnerRadius) + parseFloat(areaValue.D1));
@@ -226,43 +215,61 @@ function processEase(easeXML, fileName) {
                         roomObject.setAttribute("StartAngle", 360 - (zoneValue.SweepAngle / 2))
                         roomObject.setAttribute("InnerZ", areaValue.Z1);
                         roomObject.setAttribute("OuterZ", areaValue.Z2);
+                        setOrigin(roomObject);
+                        setScaling(roomObject);
+                        setRotation(roomObject, 0, 0, zoneValue.Orientation); // actually works for arcs
                     }
 
+
                     function genRightTrapezoid(roomObject, zoneValue, areaValue) {
+                        // rotates around "mid" of front edgeF
                         let orthSideIsRight = zoneValue.RightAngleLeft;
-                    
+                        console.warn(orthSideIsRight);
                         let d1 = parseFloat(areaValue.D1);
                         let d2 = parseFloat(areaValue.D2);
                         let frontEdge = parseFloat(zoneValue.FrontEdge);
-                        let backEdge = parseFloat(zoneValue.BackEdge);
-                        let midY  = Math.min( (frontEdge + backEdge) / 4, frontEdge, backEdge);
-                        
+                        // let backEdge = parseFloat(zoneValue.BackEdge); taken from zonevalue.depth
+                        let widthPerUnitDepth = (zoneValue.BackEdge - zoneValue.FrontEdge) / zoneValue.Depth;
 
-                        el = doc.createElement("P4");
-                        el.setAttribute("x", -(zoneValue.Depth / 2) + d1);
-                        el.setAttribute("y", -(backEdge / 2)); // if orthisleft // TODO This is too confusing without pen and paper.
-                        el.setAttribute("y", (backEdge / 2) - frontEdge);
-                        el.setAttribute("y", -(-d1 * widthPerUnitDepth / 2) - frontEdge / 2);
-                        el.setAttribute("z", areaValue.Z1);
+                        //build it with orthside == 1) {
+                        var p4 = {
+                            x: (-zoneValue.Depth / 2) + +d1,
+                            y: 0,
+                            z: areaValue.Z1
+                        }
+                        var p3 = {
+                            x: (-zoneValue.Depth / 2) + +d2,
+                            y: 0,
+                            z: areaValue.Z2
+                        }
+                        var p2 = {
+                            x: (-zoneValue.Depth / 2) + +d2,
+                            y: frontEdge + (((-zoneValue.Depth / 2) + +d2) * widthPerUnitDepth),
+                            z: areaValue.Z2
+                        }
+                        var p1 = {
+                            x: (-zoneValue.Depth / 2) + +d1,
+                            y: frontEdge + (((-zoneValue.Depth / 2) + +d1) * widthPerUnitDepth),
+                            z: areaValue.Z1
+                        }
+                        let points = [p1, p2, p3, p4];
+                        if (orthSideIsRight == 0) {
+                            p2.y = -p2.y;
+                            p1.y = -p1.y;
+                            points = [p4, p3, p2, p1]; // flipped thing, wound backwards.
+                        }
+                        for (var i = points.length - 1; i >= 0; i--) {
+                            el = doc.createElement("P" + (i + +1));
+                            el.setAttribute("x", points[i].x);
+                            el.setAttribute("y", points[i].y);
+                            el.setAttribute("z", points[i].z);
+                            roomObject.appendChild(el);
+                        }
+                        roomObject.appendChild(el);
+                        setOrigin(roomObject, 0, 0, 0);
+                        setScaling(roomObject);
 
-                        roomObject.appendChild(el);
-                        el = doc.createElement("P3");
-                        el.setAttribute("x", -(zoneValue.Depth / 2) + d2);
-                        el.setAttribute("y", (-d2 * widthPerUnitDepth / 2) - frontEdge / 2);
-                        el.setAttribute("z", areaValue.Z2);
-
-                        roomObject.appendChild(el);
-                        el = doc.createElement("P2");
-                        el.setAttribute("x", -(zoneValue.Depth / 2) + d2);
-                        el.setAttribute("y", (d2 * widthPerUnitDepth / 2) + frontEdge / 2);
-                        el.setAttribute("z", areaValue.Z2);
-                        roomObject.appendChild(el);
-
-                        el = doc.createElement("P1");
-                        el.setAttribute("x", -(zoneValue.Depth / 2) + d1);
-                        el.setAttribute("y", (d1 * widthPerUnitDepth / 2) + frontEdge / 2);
-                        el.setAttribute("z", areaValue.Z1);
-                        roomObject.appendChild(el);
+                        setRotation(roomObject, 0, 0, zoneValue.Orientation); // actually works for rects
                     }
 
                     function genTrapezoid(roomObject, zoneValue, areaValue) {
@@ -290,6 +297,10 @@ function processEase(easeXML, fileName) {
                         el.setAttribute("y", (d1 * widthPerUnitDepth / 2) + frontEdge / 2);
                         el.setAttribute("z", areaValue.Z1);
                         roomObject.appendChild(el);
+                        setOrigin(roomObject);
+                        setScaling(roomObject);
+
+                        setRotation(roomObject, 0, 0, zoneValue.Orientation); // actually works for rects
                     }
 
                     function genRectangle(roomObject, zoneValue, areaValue) {
@@ -315,10 +326,10 @@ function processEase(easeXML, fileName) {
                         el.setAttribute("y", zoneValue.Width / 2);
                         el.setAttribute("z", areaValue.Z1);
                         roomObject.appendChild(el);
-                    }
-
-
-
+                        setOrigin(roomObject);
+                        setScaling(roomObject);
+                        setRotation(roomObject, 0, 0, zoneValue.Orientation); // actually works for rects
+                    }  
 
                     switch (zoneValue.Type) {
                         case "Annulus":
@@ -336,11 +347,11 @@ function processEase(easeXML, fileName) {
                         case "Rectangle":
                             genRectangle(roomObject, zoneValue, areaValue);
                             break;
-                        default: 
+                        default:
                     }
 
 
-                    roomObject.appendChild(el);
+                    //roomObject.appendChild(el);
                     roomObjectGroup.appendChild(roomObject);
                 }
             }
@@ -356,7 +367,6 @@ function processEase(easeXML, fileName) {
         type: "application/xml;charset=utf-8;"
     });
     saveAs(blob, fileName + ".dbacv");
-
 }
 
 
