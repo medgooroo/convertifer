@@ -126,7 +126,7 @@ function genPrimitive(roomObj, numVertices) {
     const angle = roomObj.getElementsByTagName("Rotation")[0].getAttribute("z"); // arraycalc doesn't seem to offer rotation around any other axis
     rotate(vertices, angle);
     translate(vertices, orig.x, orig.y, orig.z);
-
+    rotate(vertices, 90);
     var text = '\n"Label","' + roomObj.getAttribute('Name') + '"\n';
     for (var i = numVertices - 1; i >= 0; i--) { // soundvision uses the winding to decide what is the "top" of the poly...
         text += vertices[i].x + "," + vertices[i].y + "," + vertices[i].z + "\n";
@@ -239,6 +239,11 @@ function genArcSeg(roomObj, isSuperEllipse) {
     rotate(outerVerts, angle);
     translate(innerVerts, orig.x, orig.y, orig.z);
     translate(outerVerts, orig.x, orig.y, orig.z);
+
+    rotate(innerVerts, 90);
+    rotate(outerVerts, 90);
+
+
     let text = "";
     const arcName = roomObj.getAttribute('Name');
     for (var p = 0; p < innerVerts.length - 1; p++) {
@@ -266,6 +271,8 @@ function genCube(roomObj) {
 
     const angle = roomObj.getElementsByTagName("Rotation")[0].getAttribute("z");
     rotate(verts, angle);
+    rotate(vertices, 90);
+
     translate(verts, orig.x, orig.y, orig.z);
     // I'm not sure rewriting this with a LUT for winding would really /help/ anyone. 
     let text = '\n"Label","' + quadName + ' ' + 1 + '"\n';
