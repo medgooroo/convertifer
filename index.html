@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html>
+
+<head lang="en">
+	<meta charset="utf-8">
+	<title>Convertificate 3D</title>
+	<style>
+		.upload-container {
+			position: relative;
+		}
+
+		.upload-container input {
+			border: 1px solid #92b0b3;
+			background: #f1f1f1;
+			outline: 2px dashed #92b0b3;
+			outline-offset: -10px;
+			padding: 100px 0px 100px 250px;
+			text-align: center !important;
+			width: 500px;
+		}
+
+		.upload-container input:hover {
+			background: #ddd;
+		}
+
+		.upload-container:before {
+			position: absolute;
+			bottom: 50px;
+			left: 155px;
+			content: " Drag and Drop files here. .dbacv, .obj, .fc2, .fc3, .cif, .json";
+			color: #3f8188;
+			font-weight: 900;
+		}
+
+		.upload-btn {
+			margin-left: 300px;
+			padding: 7px 20px;
+		}
+
+		/* Object Info Panel Styles */
+		#objectInfoPanel {
+			position: fixed;
+			top: 80px;
+			left: 20px;
+			width: 300px;
+			background: rgba(255, 255, 255, 0.95);
+			border: 2px solid #3f8188;
+			border-radius: 8px;
+			box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+			z-index: 1000;
+			font-family: Arial, sans-serif;
+			backdrop-filter: blur(5px);
+		}
+
+		#objectInfoHeader {
+			background: #3f8188;
+			color: white;
+			padding: 10px 15px;
+			display: flex;
+			justify-content: space-between;
+			align-items: center;
+			border-radius: 6px 6px 0 0;
+		}
+
+		#objectInfoHeader h3 {
+			margin: 0;
+			font-size: 16px;
+			flex: 1;
+		}
+
+		#objectInfoHeader button {
+			background: none;
+			border: none;
+			color: white;
+			cursor: pointer;
+			padding: 5px;
+			margin-left: 5px;
+			border-radius: 3px;
+			font-size: 14px;
+		}
+
+		#objectInfoHeader button:hover {
+			background: rgba(255, 255, 255, 0.2);
+		}
+
+		#objectInfoContent {
+			padding: 15px;
+		}
+
+		#objectInfoDetails {
+			margin-bottom: 15px;
+			font-size: 13px;
+			line-height: 1.4;
+		}
+
+		#objectInfoDetails div {
+			margin-bottom: 5px;
+		}
+
+		#objectInfoDetails strong {
+			color: #3f8188;
+		}
+
+		#surfaceTypeSelector {
+			margin-left: 5px;
+			padding: 2px 5px;
+			font-size: 12px;
+			border: 1px solid #3f8188;
+			border-radius: 3px;
+			background: white;
+			cursor: pointer;
+		}
+
+		#surfaceTypeSelector:focus {
+			outline: none;
+			border-color: #2a5a5f;
+			box-shadow: 0 0 3px rgba(63, 129, 136, 0.5);
+		}
+
+		#surfaceTypeSelector option {
+			padding: 2px;
+		}
+
+		/* Solo Controls */
+		.solo-controls {
+			margin-top: 10px;
+			padding-top: 10px;
+			border-top: 1px solid #ddd;
+		}
+
+		.solo-btn {
+			padding: 6px 12px;
+			margin-right: 8px;
+			background: #3f8188;
+			color: white;
+			border: none;
+			border-radius: 4px;
+			cursor: pointer;
+			font-size: 12px;
+			transition: background-color 0.2s;
+		}
+
+		.solo-btn:hover {
+			background: #2a5a5f;
+		}
+
+		.solo-btn.active {
+			background: #ff9800;
+		}
+
+		.solo-btn.active:hover {
+			background: #f57c00;
+		}
+
+		.clear-solo-btn {
+			padding: 6px 12px;
+			background: #f44336;
+			color: white;
+			border: none;
+			border-radius: 4px;
+			cursor: pointer;
+			font-size: 12px;
+			transition: background-color 0.2s;
+		}
+
+		.clear-solo-btn:hover {
+			background: #d32f2f;
+		}
+
+		#objectInfoActions {
+			display: flex;
+			gap: 10px;
+		}
+
+		#objectInfoActions button {
+			flex: 1;
+			padding: 8px 12px;
+			border: none;
+			border-radius: 4px;
+			cursor: pointer;
+			font-size: 12px;
+			font-weight: bold;
+		}
+
+		.danger-btn {
+			background: #f44336;
+			color: white;
+		}
+
+		.danger-btn:hover {
+			background: #d32f2f;
+		}
+
+		#deselectObject {
+			background: #92b0b3;
+			color: white;
+		}
+
+		#deselectObject:hover {
+			background: #7a9a9d;
+		}
+
+		#undoDelete {
+			width: 100%;
+			padding: 8px 12px;
+			border: none;
+			border-radius: 4px;
+			cursor: pointer;
+			font-size: 12px;
+			font-weight: bold;
+			background: #ff9800;
+			color: white;
+		}
+
+		#undoDelete:hover:not(:disabled) {
+			background: #f57c00;
+		}
+
+		#undoDelete:disabled {
+			background: #ccc;
+			color: #888;
+			cursor: not-allowed;
+		}
+
+		/* Compact info panel when collapsed */
+		#objectInfoPanel.collapsed #objectInfoContent {
+			display: none;
+		}
+
+		#objectInfoPanel.collapsed {
+			width: auto;
+		}
+
+		/* Scene Tree Panel Styles */
+		#sceneTreePanel {
+			position: fixed;
+			top: 20px;
+			right: 20px;
+			width: 320px;
+			max-height: 60vh;
+			background: rgba(255, 255, 255, 0.95);
+			border: 2px solid #3f8188;
+			border-radius: 8px;
+			box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+			z-index: 1000;
+			font-family: Arial, sans-serif;
+			backdrop-filter: blur(5px);
+		}
+
+		#sceneTreeHeader {
+			background: #3f8188;
+			color: white;
+			padding: 10px 15px;
+			display: flex;
+			justify-content: space-between;
+			align-items: center;
+			border-radius: 6px 6px 0 0;
+		}
+
+		#sceneTreeHeader h3 {
+			margin: 0;
+			font-size: 16px;
+			flex: 1;
+		}
+
+		#sceneTreeHeader button {
+			background: none;
+			border: none;
+			color: white;
+			cursor: pointer;
+			padding: 5px;
+			margin-left: 5px;
+			border-radius: 3px;
+			font-size: 14px;
+		}
+
+		#sceneTreeHeader button:hover {
+			background: rgba(255, 255, 255, 0.2);
+		}
+
+		#sceneTreeContent {
+			padding: 10px;
+			max-height: calc(60vh - 60px);
+			overflow-y: auto;
+		}
+
+		#sceneTreeContent::-webkit-scrollbar {
+			width: 8px;
+		}
+
+		#sceneTreeContent::-webkit-scrollbar-track {
+			background: #f1f1f1;
+			border-radius: 4px;
+		}
+
+		#sceneTreeContent::-webkit-scrollbar-thumb {
+			background: #3f8188;
+			border-radius: 4px;
+		}
+
+		#sceneTreeContent::-webkit-scrollbar-thumb:hover {
+			background: #2a5a5f;
+		}
+
+		/* Tree Node Styles */
+		.tree-node {
+			margin-left: 0;
+			border-left: 1px solid #ddd;
+		}
+
+		.tree-item {
+			padding: 4px 8px;
+			margin: 2px 0;
+			cursor: pointer;
+			border-radius: 4px;
+			display: flex;
+			align-items: center;
+			font-size: 13px;
+			position: relative;
+			user-select: none;
+		}
+
+		.tree-item:hover {
+			background: #e8f5e8;
+		}
+
+		.tree-item.selected {
+			background: #d4f0d4;
+			border-left: 3px solid #3f8188;
+			font-weight: bold;
+		}
+
+		.tree-item.group {
+			font-weight: 600;
+			color: #2a4d50;
+		}
+
+		.tree-item.primitive {
+			color: #5a6a5c;
+		}
+
+		.tree-toggle {
+			width: 16px;
+			height: 16px;
+			margin-right: 6px;
+			cursor: pointer;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			font-size: 10px;
+			color: #666;
+		}
+
+		.tree-toggle:hover {
+			background: #ddd;
+			border-radius: 3px;
+		}
+
+		.tree-icon {
+			width: 16px;
+			height: 16px;
+			margin-right: 6px;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			font-size: 12px;
+		}
+
+		.tree-label {
+			flex: 1;
+			overflow: hidden;
+			text-overflow: ellipsis;
+			white-space: nowrap;
+		}
+
+		.tree-children {
+			margin-left: 16px;
+			border-left: 1px dotted #ccc;
+			padding-left: 8px;
+		}
+
+		.tree-children.collapsed {
+			display: none;
+		}
+
+		.tree-stats {
+			font-size: 11px;
+			color: #888;
+			margin-left: 8px;
+		}
+
+		/* Compact tree panel when collapsed */
+		#sceneTreePanel.collapsed #sceneTreeContent {
+			display: none;
+		}
+
+		#sceneTreePanel.collapsed {
+			width: auto;
+		}
+	</style>
+
+
+  <script type="module" crossorigin src="./assets/main-_SyqbwkX.js"></script>
+  <link rel="modulepreload" crossorigin href="./assets/three-D29c9MRG.js">
+  <link rel="modulepreload" crossorigin href="./assets/controls-CG9ErnIQ.js">
+  <link rel="modulepreload" crossorigin href="./assets/crypto-YkV0U4e7.js">
+</head>
+
+<body>
+	<div id="export">
+		<button id="exportSV">Export SV Txt</button>
+		<button id="exportOBJ">Export OBJ</button>
+		<button id="exportDBACV">Export DBACV</button>
+		<button id="exportCIF">Export CIF</button>
+		<button id="exportGLB">Export GLB</button>
+		<button id="showSceneTree">Show Scene Tree</button>
+	</div>
+
+	<!-- Object Info Panel -->
+	<div id="objectInfoPanel" style="display: none;">
+		<div id="objectInfoHeader">
+			<h3>Object Information</h3>
+			<button id="toggleInfoPanel">ℹ️</button>
+			<button id="closeInfoPanel">✕</button>
+		</div>
+		<div id="objectInfoContent">
+			<div id="selectionModeInfo" style="font-size: 11px; color: #666; margin-bottom: 10px; padding: 5px; background: #f0f0f0; border-radius: 3px;">
+				<strong>Selection Modes:</strong><br>
+				• Click: Select individual mesh<br>
+				• Ctrl+Click: Select parent group<br>
+				• Shift+Click: Select root object
+			</div>
+			<div id="objectInfoDetails"></div>
+			<div id="objectInfoActions">
+				<button id="deleteObject" class="danger-btn">Delete Object</button>
+				<button id="deselectObject">Deselect</button>
+			</div>
+			<div id="undoActions" style="margin-top: 10px;">
+				<button id="undoDelete" disabled>Undo Delete</button>
+			</div>
+		</div>
+	</div>
+
+	<!-- Scene Tree Panel -->
+	<div id="sceneTreePanel" style="display: none;">
+		<div id="sceneTreeHeader">
+			<h3>Scene Hierarchy</h3>
+			<button id="refreshSceneTree" title="Refresh Tree">🔄</button>
+			<button id="toggleTreePanel" title="Collapse/Expand">📁</button>
+			<button id="closeTreePanel" title="Close">✕</button>
+		</div>
+		<div id="sceneTreeContent">
+			<div id="sceneTreeRoot"></div>
+		</div>
+	</div>
+
+	<div class="upload-container" id="drop">
+		<input type="file" id="file_upload" accept=".dbacv,.obj,.fc2,.fc3,.cif,.json" />
+	</div>
+</body>
+
+</html>
